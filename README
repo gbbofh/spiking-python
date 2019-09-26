@@ -7,7 +7,9 @@ It was a fun exercise, and I am sure that there are many changes and
 improvements that could be made to increase execution time. Some of those
 potential changes are discussed in the codes comments. Also in the comments are
 fragments of the initial prototype, which ran approximately 2x slower during
-initialization.
+initialization. That said, I am not that concerned as cursory tests of the same
+model written in C\# show massive increases in performace for the same network
+size.
 
 These scripts require scipy, for its normal and uniform distribution functions,
 as well as matplotlib in order to generate plots of the resulting spikes.
