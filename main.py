@@ -11,19 +11,21 @@ def main():
     spikes = []
     times = []
 
+    fig = plot.figure(figsize=(6,6))
+
+    ax1 = fig.add_subplot(111)
+
     t0 = datetime.datetime.now()
     net = network.Network(7 * k, 3 * k)
     t1 = datetime.datetime.now()
 
     print('configured network in:', t1 - t0)
 
-    fig = plot.figure(figsize=(6,6))
-
     t0 = datetime.datetime.now()
 
     for t in range(time_max):
-        net.input[[x for x in range(0, 7 * k)]] = 5.0 * stat.norm.rvs(size=7 * k)
-        net.input[[x for x in range(7 * k, 7 * k + 3 * k)]] = 2.0 * stat.norm.rvs(size=3 * k)
+        net.input[[x for x in range(0, net.numEx)]] = 5.0 * stat.norm.rvs(size=net.numEx)
+        net.input[[x for x in range(net.numEx, net.numEx + net.numIn)]] = 2.0 * stat.norm.rvs(size=net.numIn)
 
         tmp = net.update()
         for n in tmp:
@@ -34,14 +36,13 @@ def main():
 
     print('simulated', time_max, 'steps in: ', t1 - t0)
 
-    ax1 = fig.add_subplot(111)
-    ax1.plot(times, spikes, ',k')
-
     #xl, xr = ax1.get_xlim()
     #yb, yt = ax1.get_ylim()
 
     #ax1.set_aspect(abs((xr - xl) / (yb - yt))  * 1.0)
     ax1.axhline(color='r', y=net.numEx - 0.5, xmax=time_max)
+
+    ax1.plot(times, spikes, ',k')
 
     plot.show()
 
