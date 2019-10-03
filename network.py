@@ -27,10 +27,10 @@ class Network():
         r = stats.uniform.rvs(size=(totalNum))
 
 
-        # Not the best way to do it -- but I set out with
-        # an object oriented design in mind -- this still happens to
-        # work way faster than the code that is commented out down
-        # below.
+        # This init code still runs very slowly. Eventually I will update it to
+        # take advantage of numpy's broadcasting, as opposed to constructing
+        # a list and converting it to a numpy array afterwards. But I am
+        # currently focused on getting this thing to work at all.
         self.scale = numpy.array([0.02 if i < numEx else 0.02 + 0.08 * r[i]
                  for i in range(totalNum)])
         self.uSens = numpy.array([0.2 if i < numEx else 0.25 - 0.05 * r[i]
@@ -59,14 +59,19 @@ class Network():
         list: The list of spikes which were generated in the previous timestep
         """
 
-        spikes = numpy.where(self.voltage >= 30.0)
+        spikes = numpy.where(self.voltage >= 30.0)[0]
+        #self.input += numpy.where(self.voltage >= 30, 1, 0).dot(self.synapses)
+        #self.input[spikes] += self.synapses.transpose()[spikes].dot(spikeVec)
+        #self.input[spikes] += self.synapses.transpose()[spikes] * spikeVec
+        #if len(spikes) > 0:
+            #self.input += (self.synapses.transpose()[:,spikes].transpose() * spikeVec)[0]
+            #self.input += numpy.sum((self.synapses[:,spikes] * spikeVec).transpose(), axis=0)
+        #self.input += self.synapses[:,spikes].sum(axis=1)
+        self.input += self.synapses[spikes, :].sum(axis=0)
+
         self.voltage[spikes] = self.reset[spikes]
         self.recovery[spikes] += self.uReset[spikes]
 
-        #self.input += self.synapses.dot(numpy.where(self.voltage >= 30, 1, 0))
-        #self.input = self.input + numpy.sum( self.synapses[:,spikes], 1)
-        #self.input += numpy.transpose(self.synapses).dot(numpy.where(self.voltage >= 30, 1, 0))
-        self.input += numpy.where(self.voltage >= 30, 1, 0).dot(self.synapses)
         self.voltage += 0.5 * (0.04 * self.voltage ** 2 +
                        5.0 * self.voltage + 140 - self.recovery + self.input)
         self.voltage += 0.5 * (0.04 * self.voltage ** 2 +
@@ -76,4 +81,4 @@ class Network():
         self.voltage[numpy.where(self.voltage >= 30.0)] = 30.0
 
         self.pSpikes = spikes
-        return spikes[0]
+        return spikes
