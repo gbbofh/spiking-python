@@ -60,13 +60,6 @@ class Network():
         """
 
         spikes = numpy.where(self.voltage >= 30.0)[0]
-        #self.input += numpy.where(self.voltage >= 30, 1, 0).dot(self.synapses)
-        #self.input[spikes] += self.synapses.transpose()[spikes].dot(spikeVec)
-        #self.input[spikes] += self.synapses.transpose()[spikes] * spikeVec
-        #if len(spikes) > 0:
-            #self.input += (self.synapses.transpose()[:,spikes].transpose() * spikeVec)[0]
-            #self.input += numpy.sum((self.synapses[:,spikes] * spikeVec).transpose(), axis=0)
-        #self.input += self.synapses[:,spikes].sum(axis=1)
         self.input += self.synapses[spikes, :].sum(axis=0)
 
         self.voltage[spikes] = self.reset[spikes]
