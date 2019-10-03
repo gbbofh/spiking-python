@@ -1,16 +1,18 @@
 This is a python-based implementation of Izhikevich's model of spiking neural
-networks, initially published in 2003. This code runs *slowly* -- especially in
-comparison to the matlab code which was published alongside the paper detailing
-this model.
+networks, initially published in 2003. The code in the master branch runs
+*slowly* -- especially in comparison to the matlab code which was published
+alongside the paper detailing this model. There is a branch which has been
+updated to take advantage of numpy and scipy, which runs significantly faster.
+
+The initialization code in this branch still takes a long time to run -- I
+haven't been worrying about optimizing that part yet, but that is my new goal
+since everything else is working again.
 
 It was a fun exercise, and I am sure that there are many changes and
 improvements that could be made to increase execution time. Some of those
 potential changes are discussed in the codes comments. Also in the comments are
 fragments of the initial prototype, which ran approximately 2x slower during
 initialization. That said, I am not that concerned as cursory tests of the same
-model written in C\# show massive increases in performace for the same network
+model written in C# show massive increases in performace for the same network
 size.
-
-These scripts require scipy, for its normal and uniform distribution functions,
-as well as matplotlib in order to generate plots of the resulting spikes.
 
