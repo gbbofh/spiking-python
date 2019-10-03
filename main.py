@@ -36,13 +36,13 @@ def main():
 
     print('simulated', time_max, 'steps in: ', t1 - t0)
 
-    #xl, xr = ax1.get_xlim()
-    #yb, yt = ax1.get_ylim()
-
-    #ax1.set_aspect(abs((xr - xl) / (yb - yt))  * 1.0)
-    ax1.axhline(color='r', y=net.numEx - 0.5, xmax=time_max)
-
     ax1.plot(times, spikes, ',k')
+
+    xl, xr = ax1.get_xlim()
+    yb, yt = ax1.get_ylim()
+
+    ax1.set_aspect(abs((xr - xl) / (yb - yt))  * 1.0)
+    ax1.axhline(color='r', y=net.numEx - 0.5, xmax=time_max)
 
     plot.show()
 
