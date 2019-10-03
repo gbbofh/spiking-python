@@ -64,7 +64,9 @@ class Network():
         self.recovery[spikes] += self.uReset[spikes]
 
         #self.input += self.synapses.dot(numpy.where(self.voltage >= 30, 1, 0))
-        self.input = self.input + numpy.sum( self.synapses[:,spikes], 1)
+        #self.input = self.input + numpy.sum( self.synapses[:,spikes], 1)
+        #self.input += numpy.transpose(self.synapses).dot(numpy.where(self.voltage >= 30, 1, 0))
+        self.input += numpy.where(self.voltage >= 30, 1, 0).dot(self.synapses)
         self.voltage += 0.5 * (0.04 * self.voltage ** 2 +
                        5.0 * self.voltage + 140 - self.recovery + self.input)
         self.voltage += 0.5 * (0.04 * self.voltage ** 2 +

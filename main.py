@@ -5,7 +5,7 @@ import scipy.stats as stat
 import matplotlib.pyplot as plot
 
 def main():
-    k = 5
+    k = 100
     time_max = 1000
 
     spikes = []
