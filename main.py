@@ -6,14 +6,15 @@ import scipy.stats as stat
 import matplotlib.pyplot as plot
 import matplotlib.animation as animation
 
-k = 150
+k = 100
+timeScale = 200
 net = network.Network(7 * k, 3 * k)
 
 fig = plot.figure(figsize=(6,6))
 
 ax1 = fig.add_subplot(1, 1, 1)
-ax1.set_xlim(0, 100)
-ax1.set_ylim(0, net.totalNum)
+ax1.set_xlim(0, timeScale)
+ax1.set_ylim(-1, net.totalNum + 1)
 
 xl, xr = ax1.get_xlim()
 yl, yh = ax1.get_ylim()
@@ -21,17 +22,18 @@ yl, yh = ax1.get_ylim()
 ax1.set_aspect(abs((xr - xl) / (yl - yh)))
 ax1.axhline(color='r', y=net.numEx - 0.5, xmax=xr)
 vline = ax1.axvline(color='k', x=1, ymin=yl, ymax=yh)
-trans = ax1.get_xaxis_transform() # x in data untis, y in axes fraction
+
+trans = ax1.get_xaxis_transform()
 ax1.annotate('inh.',
-             xy=(101, (2 * net.numEx + net.numIn) / (2 * net.totalNum)),
+             xy=(timeScale + 1, (2 * net.numEx + net.numIn) / (2 * net.totalNum)),
              xycoords=trans)
 
 ax1.annotate('exc.',
-             xy=(101, net.numEx / (2 * net.totalNum)), xycoords=trans)
+             xy=(timeScale + 1, net.numEx / (2 * net.totalNum)), xycoords=trans)
 
 line, = ax1.plot([],[], ',k')
 
-data = [[] for x in range(100)]
+data = [[] for x in range(timeScale)]
 
 def init():
     line.set_data([],[])
@@ -41,7 +43,7 @@ def animate(i):
     net.input[0 : net.numEx] = 5.0 * stat.norm.rvs(size=net.numEx)
     net.input[net.numEx : ] = 2.0 * stat.norm.rvs(size=net.numIn)
     spikes = net.update()
-    data[i % 100] = spikes
+    data[i % timeScale] = spikes
     times = []
     spikes = []
     for k, d in enumerate(data):
@@ -49,7 +51,7 @@ def animate(i):
         spikes += [s for s in d]
     line.set_data(times, spikes)
     #ax1.plot([i % 100 for x in spikes], spikes, ',k')
-    vline.set_xdata(((i + 1) % 100, (i + 1) % 100))
+    vline.set_xdata(((i + 1) % timeScale, (i + 1) % timeScale))
 
     return line, vline
 
