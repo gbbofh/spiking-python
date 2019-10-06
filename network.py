@@ -1,6 +1,14 @@
 import numpy
 import scipy.stats as stats
 
+#TODO:
+# If the number of neurons being simulated is particularly large
+# (~10,000, maybe less), the model becomes unstable
+# I don't know if this is a quirk that is handled
+# behind the scenes by matlab, because I don't really use
+# matlab at all...
+# I could provide a hard-coded bound for the input, but I'm
+# Not sure if this is a good idea, or not.
 class Network():
     """
     Implements the simple spiking model by Eugene Izhikevich
@@ -26,26 +34,27 @@ class Network():
 
         r = stats.uniform.rvs(size=(totalNum))
 
+        self.scale = numpy.ones(totalNum)
+        self.uSens = numpy.ones(totalNum)
+        self.reset = numpy.ones(totalNum)
+        self.uReset = numpy.ones(totalNum)
 
-        # This init code still runs very slowly. Eventually I will update it to
-        # take advantage of numpy's broadcasting, as opposed to constructing
-        # a list and converting it to a numpy array afterwards. But I am
-        # currently focused on getting this thing to work at all.
-        self.scale = numpy.array([0.02 if i < numEx else 0.02 + 0.08 * r[i]
-                 for i in range(totalNum)])
-        self.uSens = numpy.array([0.2 if i < numEx else 0.25 - 0.05 * r[i]
-                 for i in range(totalNum)])
-        self.reset = numpy.array([-65.0 + 15 * r[i] ** 2 if i < numEx else -65.0
-                 for i in range(totalNum)])
-        self.uReset = numpy.array([6 - 6 * r[i] ** 2 if i < numEx else 2.0
-                 for i in range(totalNum)])
+        self.scale[0 : numEx] *= 0.02
+        self.scale[numEx : ] *= 0.02 + 0.08 * r[numEx : ]
+        self.uSens[0 : numEx] *= 0.2
+        self.uSens[numEx : ] *= 0.25 - 0.05 * r[numEx : ]
+        self.reset[0 : numEx] *= -65 + 15 * r[0 : numEx] ** 2
+        self.reset[numEx : ] *= -65
+        self.uReset[0 : numEx] *= 8 - 6 * r[0 : numEx] ** 2
+        self.uReset[numEx : ] *= 2
 
-        self.synapses = numpy.array([[0.5 * stats.uniform.rvs()
-                                    for i in range(totalNum)]
-                                     if j < numEx else
-                                     [-stats.uniform.rvs()
-                                      for i in range(totalNum)]
-                                     for j in range(totalNum)])
+        # The original code which used list comprehension
+        # took an obscene amount of time to do this...
+        # This runs absurdly fast in comparison.
+        self.synapses = numpy.ones((totalNum, totalNum))
+        self.synapses[0 : numEx] *= 0.5 * stats.uniform.rvs(size=totalNum)
+        self.synapses[numEx : ] *= -stats.uniform.rvs(size=totalNum)
+
         self.voltage = numpy.full(totalNum, -65.0)
         self.recovery = numpy.multiply(self.voltage, self.uSens)
         self.input = numpy.zeros(totalNum)

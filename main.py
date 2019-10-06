@@ -1,5 +1,6 @@
 import network
 
+import argparse
 import datetime
 import scipy.stats as stat
 import matplotlib.pyplot as plot
@@ -24,8 +25,8 @@ def main():
     t0 = datetime.datetime.now()
 
     for t in range(time_max):
-        net.input[[x for x in range(0, net.numEx)]] = 5.0 * stat.norm.rvs(size=net.numEx)
-        net.input[[x for x in range(net.numEx, net.numEx + net.numIn)]] = 2.0 * stat.norm.rvs(size=net.numIn)
+        net.input[0 : net.numEx] = 5.0 * stat.norm.rvs(size=net.numEx)
+        net.input[net.numEx : ] = 2.0 * stat.norm.rvs(size=net.numIn)
 
         tmp = net.update()
         for n in tmp:
