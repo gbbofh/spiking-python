@@ -6,7 +6,7 @@ import scipy.stats as stat
 import matplotlib.pyplot as plot
 import matplotlib.animation as animation
 
-k = 100
+k = 150
 net = network.Network(7 * k, 3 * k)
 
 fig = plot.figure(figsize=(6,6))
@@ -20,7 +20,14 @@ yl, yh = ax1.get_ylim()
 
 ax1.set_aspect(abs((xr - xl) / (yl - yh)))
 ax1.axhline(color='r', y=net.numEx - 0.5, xmax=xr)
-vline = ax1.axvline(color='b', x=1, ymin=yl, ymax=yh)
+vline = ax1.axvline(color='k', x=1, ymin=yl, ymax=yh)
+trans = ax1.get_xaxis_transform() # x in data untis, y in axes fraction
+ax1.annotate('inh.',
+             xy=(101, (2 * net.numEx + net.numIn) / (2 * net.totalNum)),
+             xycoords=trans)
+
+ax1.annotate('exc.',
+             xy=(101, net.numEx / (2 * net.totalNum)), xycoords=trans)
 
 line, = ax1.plot([],[], ',k')
 
