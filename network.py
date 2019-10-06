@@ -30,6 +30,8 @@ class Network():
         self.numIn = numIn
         totalNum = numEx + numIn
 
+        self.totalNum = totalNum
+
         self.pSpikes = numpy.zeros((totalNum, 1))
 
         r = stats.uniform.rvs(size=(totalNum))
