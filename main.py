@@ -1,5 +1,6 @@
 import network
 
+import argparse
 import datetime
 import scipy.stats as stat
 import matplotlib.pyplot as plot
@@ -11,33 +12,31 @@ def main():
     spikes = []
     times = []
 
+    fig = plot.figure(figsize=(6,6))
+
+    ax1 = fig.add_subplot(111)
+
     t0 = datetime.datetime.now()
     net = network.Network(7 * k, 3 * k)
     t1 = datetime.datetime.now()
-
-    fig = plot.figure(figsize=(6,6))
 
     print('configured network in:', t1 - t0)
 
     t0 = datetime.datetime.now()
 
     for t in range(time_max):
-        for neuron in net.get_excitatory():
-            neuron.input = 5.0 * stat.norm.rvs(size=1)[0]
-
-        for neuron in net.get_inhibitory():
-            neuron.input = 2.0 * stat.norm.rvs(size=1)[0]
+        net.input[0 : net.numEx] = 5.0 * stat.norm.rvs(size=net.numEx)
+        net.input[net.numEx : ] = 2.0 * stat.norm.rvs(size=net.numIn)
 
         tmp = net.update()
-        spikes += tmp
         for n in tmp:
+            spikes.append(n)
             times.append(t)
 
     t1 = datetime.datetime.now()
 
     print('simulated', time_max, 'steps in: ', t1 - t0)
 
-    ax1 = fig.add_subplot(111)
     ax1.plot(times, spikes, ',k')
 
     xl, xr = ax1.get_xlim()

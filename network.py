@@ -1,6 +1,14 @@
-import neuron
+import numpy
 import scipy.stats as stats
 
+#TODO:
+# If the number of neurons being simulated is particularly large
+# (~10,000, maybe less), the model becomes unstable
+# I don't know if this is a quirk that is handled
+# behind the scenes by matlab, because I don't really use
+# matlab at all...
+# I could provide a hard-coded bound for the input, but I'm
+# Not sure if this is a good idea, or not.
 class Network():
     """
     Implements the simple spiking model by Eugene Izhikevich
@@ -17,69 +25,41 @@ class Network():
         numEx (int): The number of excitatory neurons to generate
         numIn (int): The number of inhibitory neurons to generate
         """
-        self.neurons = []
-        self.synapses = []
+
         self.numEx = numEx
         self.numIn = numIn
-        self.pSpikes = []
-
         totalNum = numEx + numIn
+
+        self.pSpikes = numpy.zeros((totalNum, 1))
 
         r = stats.uniform.rvs(size=(totalNum))
 
+        self.scale = numpy.ones(totalNum)
+        self.uSens = numpy.ones(totalNum)
+        self.reset = numpy.ones(totalNum)
+        self.uReset = numpy.ones(totalNum)
 
-        # Not the best way to do it -- but I set out with
-        # an object oriented design in mind -- this still happens to
-        # work way faster than the code that is commented out down
-        # below.
-        scale = [0.02 if i < numEx else 0.02 + 0.08 * r[i]
-                 for i in range(totalNum)]
-        uSens = [0.2 if i < numEx else 0.25 - 0.05 * r[i]
-                 for i in range(totalNum)]
-        reset = [-65.0 + 15 * r[i] ** 2 if i < numEx else -65.0
-                 for i in range(totalNum)]
-        uReset = [6 - 6 * r[i] ** 2 if i < numEx else 2.0
-                 for i in range(totalNum)]
+        self.scale[0 : numEx] *= 0.02
+        self.scale[numEx : ] *= 0.02 + 0.08 * r[numEx : ]
+        self.uSens[0 : numEx] *= 0.2
+        self.uSens[numEx : ] *= 0.25 - 0.05 * r[numEx : ]
+        self.reset[0 : numEx] *= -65 + 15 * r[0 : numEx] ** 2
+        self.reset[numEx : ] *= -65
+        self.uReset[0 : numEx] *= 8 - 6 * r[0 : numEx] ** 2
+        self.uReset[numEx : ] *= 2
 
-        self.neurons = [neuron.Neuron(scale[i], uSens[i], reset[i], uReset[i])
-                        for i in range(totalNum)]
+        # The original code which used list comprehension
+        # took an obscene amount of time to do this...
+        # This runs absurdly fast in comparison.
+        self.synapses = numpy.ones((totalNum, totalNum))
+        self.synapses[0 : numEx] *= 0.5 * stats.uniform.rvs(size=totalNum)
+        self.synapses[numEx : ] *= -stats.uniform.rvs(size=totalNum)
 
-        self.synapses = [[0.5 * stats.uniform.rvs() for i in range(totalNum)]
-                         if j < numEx else
-                         [-stats.uniform.rvs() for i in range(totalNum)]
-                         for j in range(totalNum)]
-
-        # Old code from initial prototyping -- here for posterity
-        #for i in range(numEx):
-        #    self.neurons.append(neuron.Neuron(0.02, 0.2,
-        #                                  -65 + 15 * r[i] ** 2,
-        #                                  8 - 6 * r[i] ** 2))
-        #    self.synapses.append([])
-        #    for i in range(numEx + numIn):
-        #        self.synapses[-1].append(0.5 * stats.uniform.rvs(size=1)[0])
-
-        #    self.neurons[-1].voltage = -65
-
-        #for i in range(numIn):
-        #    self.neurons.append(neuron.Neuron(0.02 + 0.08 * r[numEx + i],
-        #                                  0.25 - 0.05 * r[numEx + i], -65, 2))
-        #    self.synapses.append([])
-        #    for i in range(numEx + numIn):
-        #        self.synapses[-1].append(-stats.uniform.rvs(size=1)[0])
-
-        #    self.neurons[-1].voltage = -65
-        #    self.neurons[-1].rec = (self.neurons[-1].uSens *
-        #                           self.neurons[-1].voltage)
+        self.voltage = numpy.full(totalNum, -65.0)
+        self.recovery = numpy.multiply(self.voltage, self.uSens)
+        self.input = numpy.zeros(totalNum)
 
 
-    # This can't really be optimized easily. If I flatten everything out
-    # into lists and keep them as members of Network, then I can use list
-    # comprehensions to update all of the values. This gave a speedboost of
-    # about 2x when I made the change in __init__
-    # but updating the values here isn't so simple...
-    # This is probably one of those situations where it would be more
-    # beneficial speed-wise to take a data-oriented design approach,
-    # rather than an object oriented design approach.
     def update(self):
         """
         Updates the membrane potential for all neurons in the network
@@ -88,51 +68,19 @@ class Network():
         list: The list of spikes which were generated in the previous timestep
         """
 
-        # Dead code, for now.
-        spikes = [i for i,n in enumerate(self.neurons) if n.voltage >= 30.0]
+        spikes = numpy.where(self.voltage >= 30.0)[0]
+        self.input += self.synapses[spikes, :].sum(axis=0)
 
-        # spikes = []
+        self.voltage[spikes] = self.reset[spikes]
+        self.recovery[spikes] += self.uReset[spikes]
 
-        for i in spikes:
-            n = self.neurons[i]
-            n.voltage = n.reset
-            n.rec = n.rec + n.uReset
-            for j,_ in enumerate(self.synapses[i]):
-                self.neurons[j].input += self.synapses[i][j]
+        self.voltage += 0.5 * (0.04 * self.voltage ** 2 +
+                       5.0 * self.voltage + 140 - self.recovery + self.input)
+        self.voltage += 0.5 * (0.04 * self.voltage ** 2 +
+                       5.0 * self.voltage + 140 - self.recovery + self.input)
+        self.recovery += self.scale * (self.voltage * self.uSens - self.recovery)
 
-        # This code originally did the job of the above
-        # for loop and list comprehension
-        # It is here for posterity.
-        # for i,neuron in enumerate(self.neurons):
-
-        #     if neuron.voltage >= 30.0:
-        #         spikes.append(i)
-        #         neuron.voltage = neuron.reset
-        #         neuron.rec = neuron.rec + neuron.uReset
-
-        #         for j,_ in enumerate(self.synapses[i]):
-        #             self.neurons[j].input += self.synapses[i][j]
-
-        for neuron in self.neurons:
-            neuron.update()
+        self.voltage[numpy.where(self.voltage >= 30.0)] = 30.0
 
         self.pSpikes = spikes
         return spikes
-
-    def get_excitatory(self):
-        """
-        Retrieves only the excitatory neurons
-
-        Returns:
-        list: A list containing only the excitatory neurons
-        """
-        return self.neurons[0 : self.numEx]
-
-    def get_inhibitory(self):
-        """
-        Retrieves only the inhibitory neurons
-
-        Returns:
-        list: A list containing only the inhibitory neurons
-        """
-        return self.neurons[self.numEx : self.numEx + self.numIn]
